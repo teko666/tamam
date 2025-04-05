@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TEKO EMPIRE - Profile System 3.0</title>
+  <style>
+    :root {
+      --neon-green: #0f0;
+      --dark-bg: #111;
+      --darker-bg: #080808;
+      --card-bg: #1a1a1a;
+      --gold: #FFD700;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--dark-bg);
+      color: var(--neon-green);
+      font-family: 'Courier New', monospace;
+      overflow-x: hidden;
+    }
+    .matrix-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.1;
+    }
+    /* Ana Sistem Arayüzü */
+    #teko-system {
+      display: none;
+      padding: 20px;
+    }
+    .system-header {
+      border-bottom: 1px solid var(--neon-green);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .system-title {
+      font-size: 2.5rem;
+      text-shadow: 0 0 5px var(--neon-green);
+      letter-spacing: 3px;
+    }
+    /* Profil Kartları */
+    .profiles-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .profile-card {
+      background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+      border: 1px solid #333;
+      border-radius: 5px;
+      padding: 15px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .profile-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 255, 0, 0.3);
+      border-color: var(--neon-green);
+    }
+    .profile-img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--neon-green);
+      display: block;
+      margin: 0 auto 15px;
+    }
+    .profile-name {
+      font-size: 1.5rem;
+      text-align: center;
+      margin: 10px 0;
+    }
+    .profile-age {
+      color: #aaa;
+      text-align: center;
+    }
+    .profile-desc {
+      margin: 15px 0;
+      padding: 10px;
+      background: #222;
+      border-left: 3px solid var(--neon-green);
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    /* Kontrol Paneli */
+    .control-panel {
+      background: var(--darker-bg);
+      padding: 15px;
+      border: 1px solid #333;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .teko-btn {
+      background: #222;
+      color: var(--neon-green);
+      border: 1px solid var(--neon-green);
+      padding: 8px 15px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Courier New', monospace;
+    }
+    .teko-btn:hover {
+      background: var(--neon-green);
+      color: #000;
+      box-shadow: 0 0 10px var(--neon-green);
+    }
+    /* Modal Pencereler */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: var(--darker-bg);
+      border: 1px solid var(--neon-green);
+      padding: 20px;
+      width: 80%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    /* Drag & Drop Alanı */
+    .drop-area {
+      border: 2px dashed var(--neon-green);
+      padding: 20px;
+      text-align: center;
+      margin: 15px 0;
+      cursor: pointer;
+    }
+    .drop-area.highlight {
+      background: rgba(0, 255, 0, 0.1);
+    }
+    /* Animasyonlar */
+    @keyframes pulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+    @keyframes glitch {
+      0% { text-shadow: 2px 0 red; }
+      25% { text-shadow: -2px 0 cyan; }
+      50% { text-shadow: 2px 0 green; }
+      100% { text-shadow: -2px 0 yellow; }
+    }
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    .teko-alert {
+      animation: glitch 0.5s infinite;
+      border: 1px solid #f00;
+      background: #300;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .teko-btn:hover {
+      transform: scale(1.1);
+      background: var(--neon-green);
+      color: #000;
+      transition: 0.2s ease-in-out;
+    }
+    /* Profile Detail Modal Stilleri */
+    .profile-detail-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      overflow-y: auto;
+    }
+    .profile-detail-content {
+      background: linear-gradient(135deg, var(--card-bg) 0%, #0a0a0a 100%);
+      border: 2px solid var(--neon-green);
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 25px;
+      position: relative;
+      color: white;
+    }
+    .photo-gallery {
+      display: grid;
+      gap: 25px;
+      margin: 25px 0;
+    }
+    .photo-section {
+      border: 1px solid #333;
+      padding: 15px;
+      border-radius: 5px;
+    }
+    .photo-section.verified {
+      border-color: var(--gold);
+    }
+    .photos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .photo-item {
+      position: relative;
+      overflow: hidden;
+      border-radius: 3px;
+      aspect-ratio: 1;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .photo-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 255, 0, 0.3);
+    }
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 1px solid #333;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .photo-item:hover img {
+      transform: scale(1.1);
+      border-color: var(--neon-green);
+    }
+    .verified-badge {
+      color: var(--gold);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .info-box {
+      background: #222;
+      padding: 10px;
+      border-left: 3px solid var(--neon-green);
+    }
+    .info-box strong {
+      color: var(--neon-green);
+      display: block;
+      margin-bottom: 5px;
+    }
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 1.5rem;
+      padding: 0 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Matrix efekti arkaplan -->
+  <canvas id="matrix-bg" class="matrix-bg"></canvas>
+  <!-- Şifre Giriş Ekranı -->
+  <div id="login-screen" style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+    <h1 class="system-title pulse">TEKO EMPIRE</h1>
+    <h2>Profile System 3.0</h2>
+    <input type="password" id="password-input" placeholder="Enter Access Code"
+           style="margin: 20px; padding: 10px; background: #222; color: #0f0; border: 1px solid #0f0;" />
+    <button id="login-btn" class="teko-btn">Access System</button>
+    <p id="login-message" style="color: red;"></p>
+  </div>
+  <!-- Ana Sistem -->
+  <div id="teko-system">
+    <div class="system-header">
+      <h1 class="system-title">TEKO PROFILE SYSTEM 3.0</h1>
+      <div>
+        <button id="export-btn" class="teko-btn">Export JSON</button>
+        <button id="backup-btn" class="teko-btn">Backup Data</button>
+      </div>
+    </div>
+    <div class="control-panel">
+      <button id="add-profile-btn" class="teko-btn">+ New Profile</button>
+      <button id="clear-system-btn" class="teko-btn">Clear System</button>
+      <select id="filter-age" class="teko-btn">
+        <option value="all">All Ages</option>
+        <option value="18-25">18-25</option>
+        <option value="26-35">26-35</option>
+        <option value="36-50">36-50</option>
+        <option value="50+">50+</option>
+      </select>
+      <input type="text" id="search-input" placeholder="Search profiles..." class="teko-btn" style="flex-grow: 1;" />
+      <button id="advanced-search-btn" class="teko-btn">🔍 Deep Scan</button>
+    </div>
+    <div class="profiles-container" id="profiles-container">
+      <!-- Profiller buraya dinamik olarak eklenecek -->
+    </div>
+  </div>
+  <!-- Yeni Profil Modalı -->
+  <div id="add-profile-modal" class="modal">
+    <div class="modal-content">
+      <h2>Add New Profile</h2>
+      <div class="drop-area" id="drop-area">
+        <p>Drag & drop profile photo here or click to select</p>
+        <input type="file" id="file-input" accept="image/*" style="display: none;" />
+        <img id="preview-img" style="max-width: 200px; max-height: 200px; display: none; margin: 10px auto;" />
+      </div>
+      <div>
+        <label for="profile-name">Name:</label>
+        <input type="text" id="profile-name" class="teko-btn" style="width: 100%; margin: 5px 0 15px;" />
+      </div>
+      <div>
+        <label for="profile-age">Age:</label>
+        <input type="number" id="profile-age" class="teko-btn" style="width: 100%; margin: 5px 0 15px;" />
+      </div>
+      <div>
+        <label for="profile-desc">Description:</label>
+        <textarea id="profile-desc" class="teko-btn" style="width: 100%; height: 100px; margin: 5px 0 15px;"></textarea>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <button id="save-profile-btn" class="teko-btn">Save Profile</button>
+        <button id="scan-face-btn" class="teko-btn">Scan Face</button>
+        <button id="cancel-profile-btn" class="teko-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- Yüz Tanıma Modalı -->
+  <div id="face-recognition-modal" class="modal">
+    <div class="modal-content">
+      <h2>🧿 Face Recognition Scan</h2>
+      <div class="teko-alert">Ensure good lighting and face the camera directly</div>
+      <video id="video-input" width="400" autoplay style="display: block; margin: 0 auto; background: #000;"></video>
+      <canvas id="canvas-output" width="400" height="300" style="display: none;"></canvas>
+      <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
+        <button id="capture-face-btn" class="teko-btn">Capture Face</button>
+        <button id="cancel-face-scan-btn" class="teko-btn">Cancel</button>
+      </div>
+      <div id="face-match-result" style="margin-top: 10px; text-align: center;"></div>
+    </div>
+  </div>
+  <!-- Profil Detay Modalı -->
+  <div id="profileDetailModal" class="profile-detail-modal">
+    <div class="profile-detail-content">
+      <button class="teko-btn close-btn">✕</button>
+      <h2 style="color: var(--neon-green); border-bottom: 1px dashed #333; padding-bottom: 10px;">
+        🌀 <span id="detail-name"></span> <span class="verified-badge">✓</span>
+      </h2>
+      <!-- Fotoğraf Galerisi -->
+      <div class="photo-gallery">
+        <div class="photo-section verified">
+          <h3><span class="verified-badge">✓</span> VERIFIED PHOTOS</h3>
+          <div class="photos-grid" id="verified-photos"></div>
+        </div>
+        <div class="photo-section">
+          <h3>🖼️ NORMAL PHOTOS</h3>
+          <div class="photos-grid" id="normal-photos"></div>
+        </div>
+      </div>
+      <!-- Profil Bilgileri -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+        <div class="info-box">
+          <strong>Nickname:</strong>
+          <span id="detail-nickname"></span>
+        </div>
+        <div class="info-box">
+          <strong>Age:</strong>
+          <span id="detail-age"></span>
+        </div>
+        <div class="info-box">
+          <strong>Location:</strong>
+          <span id="detail-location"></span>
+        </div>
+      </div>
+      <!-- Aktivite Butonları -->
+      <div style="margin-top: 25px; text-align: center;">
+        <button class="teko-btn">🔒 Kilitle</button>
+        <button class="teko-btn">⭐ VIP Yap</button>
+        <button class="teko-btn" style="color: red;">🗑️ Karantina</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Matrix arkaplan efekti
+    const canvas = document.getElementById('matrix-bg');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+    const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const nums = '0123456789';
+    const alphabet = katakana + latin + nums;
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const rainDrops = [];
+    for (let x = 0; x < columns; x++) {
+      rainDrops[x] = 1;
+    }
+    const draw = () => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#0f0';
+      ctx.font = fontSize + 'px monospace';
+      for (let i = 0; i < rainDrops.length; i++) {
+        const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+        ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+        if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          rainDrops[i] = 0;
+        }
+        rainDrops[i]++;
+      }
+    };
+    setInterval(draw, 30);
+    // Sistem değişkenleri
+    let profiles = JSON.parse(localStorage.getItem('teko-profiles')) || [];
+    let currentProfileId = null;
+    // Örnek profil verileri (mock data)
+    if (profiles.length === 0) {
+      profiles = [
+        {
+          id: 'user1',
+          name: 'MARI',
+          nickname: '666',
+          age: 24,
+          location: 'Turkey',
+          desc: 'VIP Member',
+          photo: 'https://i.pravatar.cc/500?img=31',
+          photos: {
+            verified: [
+              'https://i.pravatar.cc/400?img=31',
+              'https://i.pravatar.cc/400?img=32'
+            ],
+            normal: [
+              'https://i.pravatar.cc/400?img=33',
+              'https://i.pravatar.cc/400?img=34',
+              'https://i.pravatar.cc/400?img=35'
+            ]
+          },
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'user2',
+          name: 'JOHN DOE',
+          nickname: 'johnny',
+          age: 30,
+          location: 'USA',
+          desc: 'New User',
+          photo: 'https://i.pravatar.cc/500?img=12',
+          photos: {
+            verified: [
+              'https://i.pravatar.cc/400?img=10',
+              'https://i.pravatar.cc/400?img=20'
+            ],
+            normal: [
+              'https://i.pravatar.cc/400?img=22',
+              'https://i.pravatar.cc/400?img=23',
+              'https://i.pravatar.cc/400?img=24'
+            ]
+          },
+          createdAt: new Date().toISOString()
+        }
+      ];
+      saveProfiles();
+    }
+    // DOM elementleri
+    const loginScreen = document.getElementById('login-screen');
+    const tekoSystem = document.getElementById('teko-system');
+    const passwordInput = document.getElementById('password-input');
+    const loginBtn = document.getElementById('login-btn');
+    const loginMessage = document.getElementById('login-message');
+    const profilesContainer = document.getElementById('profiles-container');
+    const addProfileBtn = document.getElementById('add-profile-btn');
+    const clearSystemBtn = document.getElementById('clear-system-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const backupBtn = document.getElementById('backup-btn');
+    const searchInput = document.getElementById('search-input');
+    const filterAge = document.getElementById('filter-age');
+    const advancedSearchBtn = document.getElementById('advanced-search-btn');
+    const addProfileModal = document.getElementById('add-profile-modal');
+    const dropArea = document.getElementById('drop-area');
+    const fileInput = document.getElementById('file-input');
+    const previewImg = document.getElementById('preview-img');
+    const profileName = document.getElementById('profile-name');
+    const profileAge = document.getElementById('profile-age');
+    const profileDesc = document.getElementById('profile-desc');
+    const saveProfileBtn = document.getElementById('save-profile-btn');
+    const scanFaceBtn = document.getElementById('scan-face-btn');
+    const cancelProfileBtn = document.getElementById('cancel-profile-btn');
+    const faceRecognitionModal = document.getElementById('face-recognition-modal');
+    const videoInput = document.getElementById('video-input');
+    const canvasOutput = document.getElementById('canvas-output');
+    const captureFaceBtn = document.getElementById('capture-face-btn');
+    const cancelFaceScanBtn = document.getElementById('cancel-face-scan-btn');
+    const faceMatchResult = document.getElementById('face-match-result');
+    // Şifre kontrolü
+    loginBtn.addEventListener('click', () => {
+      if (passwordInput.value === 'tekogodmode') {
+        loginScreen.style.display = 'none';
+        tekoSystem.style.display = 'block';
+        renderProfiles();
+      } else {
+        loginMessage.textContent = 'ACCESS DENIED: Invalid credentials';
+      }
+    });
+    // Enter tuşu ile giriş
+    passwordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        loginBtn.click();
+      }
+    });
+    // Profilleri render etme
+    function renderProfiles(filter = '', ageFilter = 'all') {
+      profilesContainer.innerHTML = '';
+      let filteredProfiles = [...profiles];
+      // Metin filtresi
+      if (filter) {
+        filteredProfiles = filteredProfiles.filter(profile =>
+          profile.name.toLowerCase().includes(filter.toLowerCase()) ||
+          (profile.desc && profile.desc.toLowerCase().includes(filter.toLowerCase()))
+        );
+      }
+      // Yaş filtresi
+      if (ageFilter !== 'all') {
+        filteredProfiles = filteredProfiles.filter(profile => {
+          const age = parseInt(profile.age) || 0;
+          switch (ageFilter) {
+            case '18-25': return age >= 18 && age <= 25;
+            case '26-35': return age >= 26 && age <= 35;
+            case '36-50': return age >= 36 && age <= 50;
+            case '50+': return age > 50;
+            default: return true;
+          }
+        });
+      }
+      filteredProfiles.forEach((profile, index) => {
+        const profileCard = document.createElement('div');
+        profileCard.className = 'profile-card';
+        profileCard.innerHTML = `
+          ${profile.photo ? `<img src="${profile.photo}" class="profile-img" alt="${profile.name}">` 
+                           : '<div class="profile-img" style="background: #333;"></div>'}
+          <h3 class="profile-name">${profile.name}</h3>
+          <p class="profile-age">Age: ${profile.age || 'N/A'}</p>
+          <div class="profile-desc">${profile.desc || 'No description provided'}</div>
+          <div style="display: flex; gap: 5px; margin-top: 10px;">
+            <button class="teko-btn delete-btn" data-index="${index}" style="flex: 1;">Delete</button>
+            ${profile.faceData ? `<button class="teko-btn face-check-btn" data-index="${index}" style="flex: 1;">Face ID</button>` : ''}
+          </div>
+        `;
+        // İkon paneli ekle
+        const iconPanelHTML = `
+          <div style="display: flex; justify-content: center; gap: 8px; margin-top: 10px;">
+            <button class="teko-btn profile-detail-btn" title="Profile Detail">👤</button>
+            <button class="teko-btn" title="Gallery">🖼️</button>
+            <button class="teko-btn" title="VIP">⭐</button>
+            <button class="teko-btn" title="Locked">🔒</button>
+            <button class="teko-btn" title="Delete" style="color: red;">❌</button>
+          </div>
+        `;
+        profileCard.innerHTML += iconPanelHTML;
+        profileCard.setAttribute('data-profile-id', profile.id);
+        profilesContainer.appendChild(profileCard);
+      });
+      // Silme butonlarına event ekleme
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const index = e.target.getAttribute('data-index');
+          deleteProfile(index);
+        });
+      });
+      // Yüz tanıma butonlarına event ekleme
+      document.querySelectorAll('.face-check-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const index = e.target.getAttribute('data-index');
+          startFaceRecognition(profiles[index].id);
+        });
+      });
+      // Profil detay butonlarına event ekleme
+      document.querySelectorAll('.profile-detail-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const profileId = btn.closest('.profile-card').getAttribute('data-profile-id');
+          openProfileDetail(profileId);
+        });
+      });
+    }
+    // Yeni profil ekleme modalını açma
+    addProfileBtn.addEventListener('click', () => {
+      currentProfileId = Date.now().toString();
+      addProfileModal.style.display = 'flex';
+    });
+    // Modalı kapatma (Yeni Profil)
+    cancelProfileBtn.addEventListener('click', () => {
+      addProfileModal.style.display = 'none';
+      resetForm();
+    });
+    // Formu resetleme
+    function resetForm() {
+      profileName.value = '';
+      profileAge.value = '';
+      profileDesc.value = '';
+      previewImg.style.display = 'none';
+      previewImg.src = '';
+      currentProfileId = null;
+    }
+    // Drag & Drop işlemleri
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropArea.addEventListener(eventName, highlight, false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, unhighlight, false);
+    });
+    function highlight() {
+      dropArea.classList.add('highlight');
+    }
+    function unhighlight() {
+      dropArea.classList.remove('highlight');
+    }
+    dropArea.addEventListener('drop', handleDrop, false);
+    dropArea.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', handleFiles);
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      handleFiles({ target: { files } });
+    }
+    function handleFiles(e) {
+      const file = e.target.files[0];
+      if (file && file.type.match('image.*')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          previewImg.src = event.target.result;
+          previewImg.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    // Yeni profil kaydetme
+    saveProfileBtn.addEventListener('click', () => {
+      const name = profileName.value.trim();
+      const age = profileAge.value.trim();
+      const desc = profileDesc.value.trim();
+      const photo = previewImg.src || '';
+      if (!name) {
+        alert('Name is required!');
+        return;
+      }
+      const newProfile = {
+        id: currentProfileId,
+        name,
+        age,
+        desc,
+        photo,
+        createdAt: new Date().toISOString()
+      };
+      const existingIndex = profiles.findIndex(p => p.id === currentProfileId);
+      if (existingIndex >= 0) {
+        profiles[existingIndex] = newProfile;
+      } else {
+        profiles.push(newProfile);
+      }
+      saveProfiles();
+      renderProfiles(searchInput.value, filterAge.value);
+      addProfileModal.style.display = 'none';
+      resetForm();
+    });
+    // Profil silme
+    function deleteProfile(index) {
+      if (confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
+        const removed = profiles.splice(index, 1)[0];
+        if (removed) {
+          deletedProfiles.push(removed);
+        }
+        saveProfiles();
+        renderProfiles(searchInput.value, filterAge.value);
+      }
+    }
+    // Sistem temizleme
+    clearSystemBtn.addEventListener('click', () => {
+      if (confirm('WARNING: This will delete ALL profiles. Are you sure?')) {
+        profiles = [];
+        saveProfiles();
+        renderProfiles();
+      }
+    });
+    // JSON export
+    exportBtn.addEventListener('click', () => {
+      const dataStr = JSON.stringify(profiles, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+      const exportFileDefaultName = 'teko-profiles.json';
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    });
+    // Backup alma
+    backupBtn.addEventListener('click', () => {
+      localStorage.setItem('teko-profiles-backup', JSON.stringify(profiles));
+      alert('Backup created successfully!');
+    });
+    // Arama işlemi
+    searchInput.addEventListener('input', () => {
+      renderProfiles(searchInput.value, filterAge.value);
+    });
+    // Yaş filtresi
+    filterAge.addEventListener('change', () => {
+      renderProfiles(searchInput.value, filterAge.value);
+    });
+    // Gelişmiş arama
+    advancedSearchBtn.addEventListener('click', () => {
+      alert('Advanced search feature coming soon!');
+    });
+    // Profilleri localStorage'a kaydetme
+    function saveProfiles() {
+      localStorage.setItem('teko-profiles', JSON.stringify(profiles));
+    }
+    // Yüz tanıma başlatma
+    scanFaceBtn.addEventListener('click', () => {
+      if (!profileName.value.trim()) {
+        alert('Please enter a name first');
+        return;
+      }
+      startFaceRecognition(currentProfileId);
+    });
+    // Yüz tanıma işlemi
+    async function startFaceRecognition(profileId) {
+      faceMatchResult.innerHTML = '';
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoInput.srcObject = stream;
+        faceRecognitionModal.style.display = 'flex';
+        // Mevcut bir yüz verisi varsa uyarı göster
+        const existingProfile = profiles.find(p => p.id === profileId);
+        if (existingProfile && existingProfile.faceData) {
+          faceMatchResult.innerHTML = '⚠️ This profile already has face data. Capturing will overwrite it.';
+        }
+      } catch (err) {
+        console.error('Camera access error:', err);
+        alert('Could not access camera. Please make sure you have granted camera permissions.');
+      }
+    }
+    // Yüz yakalama
+    captureFaceBtn.addEventListener('click', () => {
+      const context = canvasOutput.getContext('2d');
+      canvasOutput.width = videoInput.videoWidth;
+      canvasOutput.height = videoInput.videoHeight;
+      context.drawImage(videoInput, 0, 0, canvasOutput.width, canvasOutput.height);
+      const faceData = canvasOutput.toDataURL('image/jpeg');
+      // Yüz verisini profile kaydet
+      const profileIndex = profiles.findIndex(p => p.id === currentProfileId);
+      if (profileIndex >= 0) {
+        profiles[profileIndex].faceData = faceData;
+        saveProfiles();
+        faceMatchResult.innerHTML = '✅ Face signature recorded!';
+        setTimeout(() => {
+          stopFaceRecognition();
+          faceRecognitionModal.style.display = 'none';
+        }, 1000);
+      }
+    });
+    // Yüz tanımayı iptal etme
+    cancelFaceScanBtn.addEventListener('click', stopFaceRecognition);
+    // Yüz tanımayı durdurma
+    function stopFaceRecognition() {
+      if (videoInput.srcObject) {
+        videoInput.srcObject.getTracks().forEach(track => track.stop());
+        videoInput.srcObject = null;
+      }
+      faceRecognitionModal.style.display = 'none';
+    }
+    // Karantina sistemi
+    let deletedProfiles = [];
+    function openQuarantine() {
+      const panel = document.getElementById('quarantine-panel');
+      const list = document.getElementById('quarantine-list');
+      list.innerHTML = '';
+      deletedProfiles.forEach((profile, index) => {
+        const div = document.createElement('div');
+        div.style = 'border: 1px solid #0f0; padding: 10px; background: #111;';
+        div.innerHTML = `
+          <strong>${profile.name}</strong><br>
+          Age: ${profile.age}<br>
+          <button onclick="restoreProfile(${index})" class="teko-btn">Geri Yükle</button>
+          <button onclick="purgeProfile(${index})" class="teko-btn" style="color: red;">Kalıcı Sil</button>
+        `;
+        list.appendChild(div);
+      });
+      panel.style.display = 'block';
+    }
+    function closeQuarantine() {
+      document.getElementById('quarantine-panel').style.display = 'none';
+    }
+    function restoreProfile(index) {
+      profiles.push(deletedProfiles[index]);
+      deletedProfiles.splice(index, 1);
+      renderProfiles();
+      openQuarantine();
+    }
+    function purgeProfile(index) {
+      deletedProfiles.splice(index, 1);
+      openQuarantine();
+    }
+    // Profil detay fonksiyonları
+    function openProfileDetail(profileId) {
+      const profileData = profiles.find(p => p.id === profileId);
+      if (!profileData) return;
+      document.getElementById('detail-name').textContent = profileData.name;
+      document.getElementById('detail-nickname').textContent = profileData.nickname || '';
+      document.getElementById('detail-age').textContent = profileData.age || '';
+      document.getElementById('detail-location').textContent = profileData.location || '';
+      const photos = profileData.photos || { verified: [], normal: [] };
+      loadProfilePhotos('verified-photos', photos.verified);
+      loadProfilePhotos('normal-photos', photos.normal);
+      document.getElementById('profileDetailModal').style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+    function loadProfilePhotos(containerId, photos) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      photos.forEach(url => {
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'photo-item';
+        imgWrap.innerHTML = `<img src="${url}" alt="Profile photo">`;
+        container.appendChild(imgWrap);
+      });
+    }
+    function closeProfileDetail() {
+      document.getElementById('profileDetailModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+    // Modalı ESC veya ✕ ile kapatma
+    document.querySelector('#profileDetailModal .close-btn').addEventListener('click', closeProfileDetail);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeProfileDetail();
+      }
+    });
+    // Pencere boyutu değiştiğinde canvas'ı güncelle
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+    // Sayfa yüklendiğinde yedekten geri yükleme kontrolü
+    window.addEventListener('load', () => {
+      const backup = localStorage.getItem('teko-profiles-backup');
+      if (backup && !localStorage.getItem('teko-profiles')) {
+        if (confirm('A backup was found. Restore from backup?')) {
+          profiles = JSON.parse(backup);
+          saveProfiles();
+        }
+      }
+    });
+  </script>
+  <button class="teko-btn" onclick="openQuarantine()" style="position: fixed; bottom: 20px; right: 20px; z-index: 999;">🗑 Karantina</button>
+  <!-- TEKO: KARANTINA PANELI -->
+  <div id="quarantine-panel" style="display: none; padding: 20px;">
+    <h2 style="color: #0f0;">🗑 Silinen Profiller</h2>
+    <div id="quarantine-list" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+    <button class="teko-btn" onclick="closeQuarantine()" style="margin-top: 10px;">Kapat</button>
+  </div>
+</body>
+</html>
